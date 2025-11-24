@@ -26,6 +26,7 @@ env/
 # Data files (too large for Git)
 data/
 !data/.gitkeep
+*.zip
 
 # IDE
 .vscode/

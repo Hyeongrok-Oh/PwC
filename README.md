@@ -55,6 +55,18 @@ run_04_extract_text.bat
 
 PDF와 XML 파일에서 텍스트를 추출하여 JSON 형식으로 저장합니다.
 
+#### Step 5: TV 관련 리포트 필터링 ✅
+
+```bash
+python 05_filter_tv_reports.py
+# 또는 Windows에서
+run_05_filter.bat
+```
+
+추출된 텍스트에서 TV 관련 키워드(TV, OLED, 디스플레이, 패널 등)를 포함하는 리포트만 필터링합니다.
+- 총 79개 문서 중 54개 TV 관련 문서 필터링 (68.4%)
+- 필터링된 결과는 `data/filtered/filtered_index.json`에 저장됩니다
+
 ## 프로젝트 구조
 
 ```
@@ -64,11 +76,13 @@ PwC/
 ├── 02_crawl_dart_metadata.py      # Step 2: DART 메타데이터 수집
 ├── 03_download_dart_documents.py  # Step 3: DART 문서 다운로드
 ├── 04_extract_text.py             # Step 4: 텍스트 추출
+├── 05_filter_tv_reports.py        # Step 5: TV 관련 필터링
 ├── setup_venv.bat                 # 가상환경 설정
 ├── run_01_consensus.bat           # Step 1 실행
 ├── run_02_dart_metadata.bat       # Step 2 실행
 ├── run_03_dart_documents.bat      # Step 3 실행
 ├── run_04_extract_text.bat        # Step 4 실행
+├── run_05_filter.bat              # Step 5 실행
 ├── .gitignore                     # Git 제외 파일
 ├── .env.example                   # 환경변수 예시
 ├── data/                          # 데이터 폴더 (Git에서 제외됨)
@@ -80,7 +94,8 @@ PwC/
 │   │   ├── consensus/            # PDF 텍스트 (JSON)
 │   │   ├── dart/                 # XML 텍스트 (JSON)
 │   │   └── index.json            # 통합 인덱스
-│   ├── filtered/                 # TV 관련 필터링 결과 (예정)
+│   ├── filtered/                 # TV 관련 필터링 결과
+│   │   └── filtered_index.json   # 필터링된 문서 인덱스 (54개)
 │   └── processed/                # KPI-요인 추출 결과 (예정)
 ├── requirements.txt
 ├── README.md
@@ -102,8 +117,12 @@ PwC/
 - XML 텍스트 추출 (lxml)
 - 총 79개 문서에서 텍스트 추출 완료
 
-### Step 5: TV 관련 여부 필터링 (예정)
-- TV 관련 키워드 기반 필터링
+### ✅ Step 5: TV 관련 리포트 필터링
+- TV 관련 키워드 기반 필터링 (TV, OLED, 디스플레이, 패널, UHD 등)
+- 총 79개 문서 중 54개 TV 관련 문서 필터링 (68.4%)
+  - Consensus: 54/71개 (76.1%)
+  - DART: 0/8개
+  - LG전자: 26개, 삼성전자: 28개
 
 ### Step 6: KPI-요인 추출 (예정)
 - LLM을 활용한 구조화된 정보 추출
