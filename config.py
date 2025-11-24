@@ -34,6 +34,8 @@ EXTRACTED_DIR = f"{DATA_DIR}/extracted"  # 텍스트 추출 결과
 EXTRACTED_CONSENSUS_DIR = f"{EXTRACTED_DIR}/consensus"  # PDF 텍스트 추출
 EXTRACTED_DART_DIR = f"{EXTRACTED_DIR}/dart"  # XML 텍스트 추출
 FILTERED_DIR = f"{DATA_DIR}/filtered"
+TV_CONTENT_DIR = f"{FILTERED_DIR}/tv_content"  # TV 관련 문단만 추출
+TV_CONTENT_CONSENSUS_DIR = f"{TV_CONTENT_DIR}/consensus"  # Consensus TV 문단
 PROCESSED_DIR = f"{DATA_DIR}/processed"
 
 # URLs

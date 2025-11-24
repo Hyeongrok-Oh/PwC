@@ -64,8 +64,24 @@ run_05_filter.bat
 ```
 
 추출된 텍스트에서 TV 관련 키워드(TV, OLED, 디스플레이, 패널 등)를 포함하는 리포트만 필터링합니다.
-- 총 79개 문서 중 54개 TV 관련 문서 필터링 (68.4%)
+- 총 79개 문서 중 62개 TV 관련 문서 필터링 (78.5%)
 - 필터링된 결과는 `data/filtered/filtered_index.json`에 저장됩니다
+
+#### Step 5.5: Consensus TV 문단 추출 (비용 최적화) ✅
+
+```bash
+python 06_extract_tv_content.py
+# 또는 Windows에서
+run_06_extract_tv_content.bat
+```
+
+Consensus 문서에서 TV 관련 키워드가 포함된 문단만 추출하여 LLM API 비용을 절감합니다.
+- 54개 Consensus 문서 처리
+- 67.5% 데이터 감소 (614,161자 → 199,609자)
+- LG전자: 74.4% 감소, 삼성전자: 63.3% 감소
+- 622K 토큰 절감 (한글 1.5배 환산)
+- 예상 비용 절감: GPT-4 $18.65, Claude 3.5 Sonnet $1.87, Gemini Flash 2.5 $0.047
+- 추출된 결과는 `data/filtered/tv_content/consensus/`에 저장됩니다
 
 ## 프로젝트 구조
 
@@ -77,12 +93,14 @@ PwC/
 ├── 03_download_dart_documents.py  # Step 3: DART 문서 다운로드
 ├── 04_extract_text.py             # Step 4: 텍스트 추출
 ├── 05_filter_tv_reports.py        # Step 5: TV 관련 필터링
+├── 06_extract_tv_content.py       # Step 5.5: Consensus TV 문단 추출
 ├── setup_venv.bat                 # 가상환경 설정
 ├── run_01_consensus.bat           # Step 1 실행
 ├── run_02_dart_metadata.bat       # Step 2 실행
 ├── run_03_dart_documents.bat      # Step 3 실행
 ├── run_04_extract_text.bat        # Step 4 실행
 ├── run_05_filter.bat              # Step 5 실행
+├── run_06_extract_tv_content.bat  # Step 5.5 실행
 ├── .gitignore                     # Git 제외 파일
 ├── .env.example                   # 환경변수 예시
 ├── data/                          # 데이터 폴더 (Git에서 제외됨)
@@ -95,7 +113,10 @@ PwC/
 │   │   ├── dart/                 # XML 텍스트 (JSON)
 │   │   └── index.json            # 통합 인덱스
 │   ├── filtered/                 # TV 관련 필터링 결과
-│   │   └── filtered_index.json   # 필터링된 문서 인덱스 (54개)
+│   │   ├── filtered_index.json   # 필터링된 문서 인덱스 (62개)
+│   │   └── tv_content/           # TV 문단만 추출 (비용 최적화)
+│   │       ├── consensus/        # Consensus TV 문단 (54개)
+│   │       └── tv_content_index.json  # TV 문단 인덱스
 │   └── processed/                # KPI-요인 추출 결과 (예정)
 ├── requirements.txt
 ├── README.md
@@ -124,6 +145,17 @@ PwC/
   - DART: 8/8개 (100%) - TV 관련 문단 추출
   - LG전자: 30개 (100%), 삼성전자: 32개 (65.3%)
 - DART 문서는 TV 관련 문단과 주변 문맥만 추출하여 저장
+
+### ✅ Step 5.5: Consensus TV 문단 추출 (비용 최적화)
+- Consensus 문서에서 TV 관련 키워드가 포함된 문단만 추출
+- 54개 Consensus 문서에서 67.5% 데이터 감소
+  - 원본: 614,161자 → TV 문단: 199,609자
+  - LG전자: 74.4% 감소 (231,394자 → 59,258자)
+  - 삼성전자: 63.3% 감소 (382,767자 → 140,351자)
+- 622K 토큰 절감으로 LLM API 비용 대폭 절감
+  - GPT-4: $18.65 절감
+  - Claude 3.5 Sonnet: $1.87 절감
+  - Gemini Flash 2.5: $0.047 절감
 
 ### Step 6: KPI-요인 추출 (예정)
 - LLM을 활용한 구조화된 정보 추출
