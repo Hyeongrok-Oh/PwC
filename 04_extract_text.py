@@ -151,20 +151,17 @@ class TextExtractor:
                             is_main_doc = not any(x in xml_file for x in ['_00760', '_00761'])
                             doc_type = 'main' if is_main_doc else 'audit'
 
-                            # Extract text from BODY section (main document)
+                            # Extract text from all elements (main document)
                             text_parts = []
 
                             if is_main_doc:
-                                # Extract all text from P tags and TD tags
+                                # Extract all text from all elements
                                 for elem in root.iter():
-                                    tag = elem.tag if not isinstance(elem.tag, str) else elem.tag
-                                    if isinstance(tag, str):
-                                        if tag == 'P' or tag == 'TD':
-                                            if elem.text:
-                                                text_parts.append(elem.text.strip())
-                                        # Also check for text in SECTION elements
-                                        elif 'SECTION' in tag and elem.text:
-                                            text_parts.append(elem.text.strip())
+                                    if elem.text and elem.text.strip():
+                                        text_parts.append(elem.text.strip())
+                                    # Also get tail text (text after closing tag)
+                                    if elem.tail and elem.tail.strip():
+                                        text_parts.append(elem.tail.strip())
 
                             # Extract SUMMARY data (all documents)
                             summary_data = {}
