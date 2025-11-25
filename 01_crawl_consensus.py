@@ -68,7 +68,7 @@ class HankyungConsensusCrawler:
 
     def crawl_company_reports(self, company_name, company_code=None):
         """
-        Crawl analyst reports for a specific company
+        Crawl analyst reports for a specific company with pagination support
 
         Args:
             company_name: 회사명 (e.g., "LG전자")
@@ -81,112 +81,142 @@ class HankyungConsensusCrawler:
         # Get date range
         start_date, end_date = self.get_date_range()
 
-        # Build URL with proper encoding
-        search_text_encoded = urllib.parse.quote(company_name)
-        url = (f"{config.HANKYUNG_CONSENSUS_URL}/analysis/list?"
-               f"sdate={start_date}&edate={end_date}&"
-               f"search_text={search_text_encoded}&pagenum=50")
+        all_reports = []
+        page = 1
+        max_pages = (config.MAX_REPORTS_PER_COMPANY // 50) + 1  # 50 reports per page
 
-        print(f"URL: {url}")
-        print(f"Date range: {start_date} ~ {end_date}")
+        while len(all_reports) < config.MAX_REPORTS_PER_COMPANY:
+            print(f"\nFetching page {page}...")
 
-        self.driver.get(url)
+            # Build URL with proper encoding and pagination
+            search_text_encoded = urllib.parse.quote(company_name)
+            url = (f"{config.HANKYUNG_CONSENSUS_URL}/analysis/list?"
+                   f"sdate={start_date}&edate={end_date}&"
+                   f"search_text={search_text_encoded}&pagenum=50&now_page={page}")
 
-        # Wait for page to load
-        time.sleep(3)
+            print(f"URL: {url}")
+            if page == 1:
+                print(f"Date range: {start_date} ~ {end_date}")
 
-        # Try to wait for table to load
-        try:
-            self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.table_style01 table")))
-        except:
-            print("Table not found with wait, continuing...")
+            self.driver.get(url)
 
-        # Get page source
-        html = self.driver.page_source
-        soup = BeautifulSoup(html, 'html.parser')
+            # Wait for page to load
+            time.sleep(3)
 
-        reports = []
-
-        # Find the main table
-        table = soup.select_one('div.table_style01 table')
-
-        if not table:
-            print(f"Warning: Report table not found. Page structure may have changed.")
-            print(f"Saving raw HTML for inspection...")
-            self.save_raw_html(company_name, "", html)
-            return reports
-
-        # Find all report rows (skip header)
-        report_rows = table.select('tbody tr')
-
-        if not report_rows:
-            print(f"Warning: No report rows found.")
-            self.save_raw_html(company_name, "", html)
-            return reports
-
-        print(f"Found {len(report_rows)} report rows")
-
-        # Process each report
-        for idx, row in enumerate(report_rows[:config.MAX_REPORTS_PER_COMPANY], 1):
+            # Try to wait for table to load
             try:
-                # Extract cells
-                cells = row.find_all('td')
+                self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.table_style01 table")))
+            except:
+                print("Table not found with wait, continuing...")
 
-                if len(cells) < 6:
+            # Get page source
+            html = self.driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # Find the main table
+            table = soup.select_one('div.table_style01 table')
+
+            if not table:
+                print(f"Warning: Report table not found on page {page}.")
+                if page == 1:
+                    print(f"Saving raw HTML for inspection...")
+                    self.save_raw_html(company_name, "", html)
+                break
+
+            # Find all report rows (skip header)
+            report_rows = table.select('tbody tr')
+
+            if not report_rows:
+                print(f"No more reports found on page {page}. Stopping pagination.")
+                break
+
+            print(f"Found {len(report_rows)} report rows on page {page}")
+
+            # Process each report
+            page_reports = []
+            for idx, row in enumerate(report_rows, 1):
+                try:
+                    # Extract cells
+                    cells = row.find_all('td')
+
+                    if len(cells) < 6:
+                        continue
+
+                    # Parse report data based on actual HTML structure
+                    date_cell = cells[0]  # td.first.txt_number
+                    category_cell = cells[1]
+                    title_cell = cells[2]  # td.text_l
+                    author_cell = cells[3]
+                    source_cell = cells[4]
+                    file_cell = cells[5]
+
+                    # Extract title and link
+                    title_link = title_cell.select_one('a')
+                    if not title_link:
+                        continue
+
+                    title = title_link.get_text(strip=True)
+                    report_link = title_link.get('href', '')
+
+                    # Extract PDF download link
+                    pdf_link_elem = file_cell.select_one('a[href*="downpdf"]')
+                    pdf_link = pdf_link_elem.get('href', '') if pdf_link_elem else ''
+
+                    # Build full PDF URL
+                    if pdf_link and not pdf_link.startswith('http'):
+                        pdf_link = config.HANKYUNG_CONSENSUS_URL + pdf_link
+
+                    report_data = {
+                        'company_name': company_name,
+                        'date': date_cell.get_text(strip=True),
+                        'category': category_cell.get_text(strip=True),
+                        'title': title,
+                        'author': author_cell.get_text(strip=True),
+                        'source': source_cell.get_text(strip=True),
+                        'report_link': report_link,
+                        'pdf_link': pdf_link,
+                        'crawled_at': datetime.now().isoformat()
+                    }
+
+                    page_reports.append(report_data)
+                    print(f"  [{len(all_reports) + idx}] {report_data['date']} - {report_data['title'][:50]}...")
+
+                except Exception as e:
+                    print(f"  Error processing row {idx}: {str(e)}")
                     continue
 
-                # Parse report data based on actual HTML structure
-                date_cell = cells[0]  # td.first.txt_number
-                category_cell = cells[1]
-                title_cell = cells[2]  # td.text_l
-                author_cell = cells[3]
-                source_cell = cells[4]
-                file_cell = cells[5]
+            if not page_reports:
+                print(f"No valid reports found on page {page}. Stopping pagination.")
+                break
 
-                # Extract title and link
-                title_link = title_cell.select_one('a')
-                if not title_link:
-                    continue
+            all_reports.extend(page_reports)
 
-                title = title_link.get_text(strip=True)
-                report_link = title_link.get('href', '')
+            # Check if we have enough reports or reached max pages
+            if len(all_reports) >= config.MAX_REPORTS_PER_COMPANY:
+                all_reports = all_reports[:config.MAX_REPORTS_PER_COMPANY]
+                print(f"\nReached maximum report limit ({config.MAX_REPORTS_PER_COMPANY})")
+                break
 
-                # Extract PDF download link
-                pdf_link_elem = file_cell.select_one('a[href*="downpdf"]')
-                pdf_link = pdf_link_elem.get('href', '') if pdf_link_elem else ''
+            if page >= max_pages:
+                print(f"\nReached maximum page limit ({max_pages})")
+                break
 
-                # Build full PDF URL
-                if pdf_link and not pdf_link.startswith('http'):
-                    pdf_link = config.HANKYUNG_CONSENSUS_URL + pdf_link
+            # Check if there are fewer reports than pagenum (last page)
+            if len(page_reports) < 50:
+                print(f"\nLast page reached (fewer than 50 reports)")
+                break
 
-                report_data = {
-                    'company_name': company_name,
-                    'date': date_cell.get_text(strip=True),
-                    'category': category_cell.get_text(strip=True),
-                    'title': title,
-                    'author': author_cell.get_text(strip=True),
-                    'source': source_cell.get_text(strip=True),
-                    'report_link': report_link,
-                    'pdf_link': pdf_link,
-                    'crawled_at': datetime.now().isoformat()
-                }
+            page += 1
 
-                reports.append(report_data)
-                print(f"  [{idx}] {report_data['date']} - {report_data['title'][:50]}...")
-
-            except Exception as e:
-                print(f"  Error processing row {idx}: {str(e)}")
-                continue
-
-        print(f"\nSuccessfully extracted {len(reports)} reports")
+        print(f"\nSuccessfully extracted {len(all_reports)} reports across {page} page(s)")
 
         # Save reports metadata
-        self.save_reports(company_name, reports)
+        self.save_reports(company_name, all_reports)
 
         # Download PDFs
-        self.download_pdfs(company_name, reports)
+        self.download_pdfs(company_name, all_reports)
 
-        return reports
+        return all_reports
 
     def download_pdfs(self, company_name, reports):
         """Download PDF files by clicking download button in PDF viewer"""

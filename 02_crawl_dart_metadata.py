@@ -23,7 +23,7 @@ class DartCrawler:
     def setup_directories(self):
         """Create necessary directories"""
         os.makedirs(config.RAW_DIR, exist_ok=True)
-        os.makedirs(config.PDF_DIR, exist_ok=True)
+        os.makedirs(config.DART_DIR, exist_ok=True)
 
     def get_corp_codes(self):
         """
@@ -40,6 +40,14 @@ class DartCrawler:
             response.raise_for_status()
 
             print(f"Downloaded: {len(response.content)} bytes")
+
+            # Check if response is an error message
+            if len(response.content) < 1000:
+                try:
+                    error_text = response.content.decode('utf-8')
+                    print(f"API Response: {error_text}")
+                except:
+                    pass
 
             # Extract ZIP file
             with zipfile.ZipFile(BytesIO(response.content)) as z:

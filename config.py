@@ -2,6 +2,12 @@
 Configuration file for the project
 """
 
+import os
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
+
 # Target companies
 COMPANIES = {
     "LG전자": "006360",
@@ -44,9 +50,9 @@ DART_API_BASE_URL = "https://opendart.fss.or.kr/api"
 DART_CORP_CODE_URL = "https://opendart.fss.or.kr/api/corpCode.xml"
 DART_DOCUMENT_URL = "https://opendart.fss.or.kr/api/document.xml"
 
-# DART API settings
-import os
+# API settings
 DART_API_KEY = os.getenv('DART_API_KEY', 'e28a5f7e1fbead8c3403dfbf5d9d434acb32df6c')  # Use environment variable or default
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Use environment variable
 
 # DART report types (공시상세유형)
 DART_REPORT_TYPES = {
@@ -56,5 +62,5 @@ DART_REPORT_TYPES = {
 }
 
 # Crawling settings
-CRAWL_DATE_RANGE_DAYS = 365  # 1 year
-MAX_REPORTS_PER_COMPANY = 50  # Maximum reports to crawl per company
+CRAWL_DATE_RANGE_DAYS = 1095  # 3 years (365 * 3)
+MAX_REPORTS_PER_COMPANY = 150  # Maximum reports to crawl per company (increased for 3 years)

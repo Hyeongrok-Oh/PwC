@@ -20,7 +20,14 @@
       "Bash(git commit:*)",
       "Bash(git config:*)",
       "Bash(git push:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(venv\\Scripts\\python.exe -m pip:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then cat .env)",
+      "Bash(else echo \".env 파일이 없습니다\")",
+      "Bash(fi)",
+      "Bash(venvScriptspython.exe 08_aggregate_kpi_factors.py)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
